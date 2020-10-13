@@ -6,10 +6,12 @@ import numpy as np
 import os
 import time
 import optparse
+import urllib
 
 from include import processInputTarget
 from ml import buildModel
 from ml import loss
+from ml import generateText
 
 parser = optparse.OptionParser(usage="usage: %prog [opts]", version="%prog 1.0")
 parser.add_option('-n', '--nepochs',  action='store', type=int, dest='nepochs',  default=10, help='specify the number of epochs')
@@ -17,7 +19,7 @@ parser.add_option('-n', '--nepochs',  action='store', type=int, dest='nepochs', 
 EPOCHS       = opts.nepochs
 
 ##load data, in this case name of London tube stations
-file_stations = tf.keras.utils.get_file('tubeStations.txt', 'https://github.com/leonoravesterbacka/ltsng/blob/main/data/tubeStations.txt')
+file_stations = tf.keras.utils.get_file('tubestations3.txt', 'http://mvesterb.web.cern.ch/mvesterb/tubestations3.txt')
 list_stations = open(file_stations, 'rb').read().decode(encoding='utf-8')
 print ('First couple of station names: {}'.format(list_stations[:25]))
 print(list_stations[:250])
@@ -29,11 +31,6 @@ char2idx = {u:i for i, u in enumerate(sort)}
 idx2char = np.array(sort)
 
 list_as_int = np.array([char2idx[c] for c in list_stations])
-print('{')
-for char,_ in zip(char2idx, range(20)):
-    print('  {:4s}: {:3d},'.format(repr(char), char2idx[char]))
-print('  ...\n}')
-print ('{} ---- characters mapped to int ---- > {}'.format(repr(list_stations[:13]), list_as_int[:13]))
 
 # The maximum length sentence we want for a single input in characters
 seq_length = 20
@@ -111,3 +108,16 @@ checkpoint_callback=tf.keras.callbacks.ModelCheckpoint(
 
 
 history = model.fit(dataset, epochs=EPOCHS, callbacks=[checkpoint_callback])
+
+
+model = buildModel(size, embedding_dim, rnn_units, batch_size=1)
+model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+model.build(tf.TensorShape([1, None]))
+
+model.summary()
+
+output = generateText(model, char2idx, idx2char, start_string=u"E")
+print("output:  ", output)
+with open('output/result_'+str(EPOCHS)+'.txt', 'w') as file:
+   file.write(output)
+
