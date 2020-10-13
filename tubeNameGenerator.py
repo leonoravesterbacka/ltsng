@@ -17,7 +17,7 @@ parser.add_option('-n', '--nepochs',  action='store', type=int, dest='nepochs', 
 EPOCHS       = opts.nepochs
 
 ##load data, in this case name of London tube stations
-file_stations = tf.keras.utils.get_file('tubestations3.txt', 'http://mvesterb.web.cern.ch/mvesterb/tubestations3.txt')
+file_stations = tf.keras.utils.get_file('tubeStations.txt', 'https://github.com/leonoravesterbacka/ltsng/blob/main/data/tubeStations.txt')
 list_stations = open(file_stations, 'rb').read().decode(encoding='utf-8')
 print ('First couple of station names: {}'.format(list_stations[:25]))
 print(list_stations[:250])
