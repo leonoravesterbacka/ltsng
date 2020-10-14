@@ -19,31 +19,31 @@ parser.add_option('-n', '--nepochs',  action='store', type=int, dest='nepochs', 
 EPOCHS       = opts.nepochs
 
 ##load data, in this case name of London tube stations
-file_stations = tf.keras.utils.get_file('tubestations3.txt', 'http://mvesterb.web.cern.ch/mvesterb/tubestations3.txt')
-list_stations = open(file_stations, 'rb').read().decode(encoding='utf-8')
-print ('First couple of station names: {}'.format(list_stations[:25]))
-print(list_stations[:250])
-sort = sorted(set(list_stations))
+fileStations = tf.keras.utils.get_file('tubestations3.txt', 'http://mvesterb.web.cern.ch/mvesterb/tubestations3.txt')
+listStations = open(fileStations, 'rb').read().decode(encoding='utf-8')
+print ('First couple of station names: {}'.format(listStations[:25]))
+print(listStations[:250])
+sort = sorted(set(listStations))
 print ('{} unique characters'.format(len(sort)))
 
 ##cast the chars as integers 
 char2idx = {u:i for i, u in enumerate(sort)}
 idx2char = np.array(sort)
 
-list_as_int = np.array([char2idx[c] for c in list_stations])
+listAsInt = np.array([char2idx[c] for c in listStations])
 
 # The maximum length sentence we want for a single input in characters
-seq_length = 20
-examples_per_epoch = len(list_stations)//(seq_length+1)
+seqLen = 20
+examples = len(listStations)//(seqLen+1)
 
 # Create training examples / targets
-char_dataset = tf.data.Dataset.from_tensor_slices(list_as_int)
+charDataset = tf.data.Dataset.from_tensor_slices(listAsInt)
 
-for i in char_dataset.take(100):
+for i in charDataset.take(100):
     print(idx2char[i.numpy()])
 
 ##The `batch` method converts these individual characters to sequences of the desired size.
-sequences = char_dataset.batch(seq_length+1, drop_remainder=True)
+sequences = charDataset.batch(seqLen+1, drop_remainder=True)
 
 for item in sequences.take(5):
     print(repr(''.join(idx2char[item.numpy()])))
@@ -52,14 +52,14 @@ for item in sequences.take(5):
 dataset = sequences.map(processInputTarget)
 
 #Print the first examples input and target values:
-for input_example, target_example in  dataset.take(1):
-    print ('Input data: ', repr(''.join(idx2char[input_example.numpy()])))
-    print ('Target data:', repr(''.join(idx2char[target_example.numpy()])))
+for inputExample, targetExample in  dataset.take(1):
+    print ('Input data: ', repr(''.join(idx2char[inputExample.numpy()])))
+    print ('Target data:', repr(''.join(idx2char[targetExample.numpy()])))
 
-for i, (input_idx, target_idx) in enumerate(zip(input_example[:10], target_example[:10])):
+for i, (inputIdx, targetIdx) in enumerate(zip(inputExample[:10], targetExample[:10])):
     print("Step {:4d}".format(i))
-    print("  input: {} ({:s})".format(input_idx, repr(idx2char[input_idx])))
-    print("  expected output: {} ({:s})".format(target_idx, repr(idx2char[target_idx])))
+    print("  input: {} ({:s})".format(inputIdx, repr(idx2char[inputIdx])))
+    print("  expected output: {} ({:s})".format(targetIdx, repr(idx2char[targetIdx])))
 
 #shuffle data nad pack into batches
 BATCH_SIZE = 64
@@ -71,52 +71,52 @@ dataset = dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE, drop_remainder=True)
 size = len(sort)
 
 # The embedding dimension
-embedding_dim = 256
+embeddingDim = 256
 
 # Number of RNN units
-rnn_units = 1024
+rnnUnits = 1024
 
 model = buildModel(
   size = len(sort),
-  embedding_dim=embedding_dim,
-  rnn_units=rnn_units,
-  batch_size=BATCH_SIZE)
+  embeddingDim=embeddingDim,
+  rnnUnits=rnnUnits,
+  batchSize=BATCH_SIZE)
 
 #try the model
 print(dataset.take(1))
-for input_example_batch, target_example_batch in dataset.take(5):
-    example_batch_predictions = model(input_example_batch)
+for inputExampleBatch, targetExampleBatch in dataset.take(5):
+    exampleBatchPredictions = model(inputExampleBatch)
 model.summary()
 
-sampled_indices = tf.random.categorical(example_batch_predictions[0], num_samples=1)
-sampled_indices = tf.squeeze(sampled_indices,axis=-1).numpy()
+sampledIndices = tf.random.categorical(exampleBatchPredictions[0], num_samples=1)
+sampledIndices = tf.squeeze(sampledIndices,axis=-1).numpy()
 
 ##start the training
-example_batch_loss  = loss(target_example_batch, example_batch_predictions)
-print("prediction shape: ", example_batch_predictions.shape, " # (batch_size, sequence_length, size)")
-print("scalar_loss:      ", example_batch_loss.numpy().mean())
+exampleBatchLoss  = loss(targetExampleBatch, exampleBatchPredictions)
+print("prediction shape: ", exampleBatchPredictions.shape, " # (batch size, sequence length, size)")
+print("loss:      ", exampleBatchLoss.numpy().mean())
 
 model.compile(optimizer='adam', loss=loss)
 
 # save checkpoints in following directory
-checkpoint_dir = './training_checkpoints'
-checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt_{epoch}")
+checkpointPath = './training'
+checkpointPrefix = os.path.join(checkpointPath, "ckpt_{epoch}")
 
-checkpoint_callback=tf.keras.callbacks.ModelCheckpoint(
-    filepath=checkpoint_prefix,
+checkpointCallback=tf.keras.callbacks.ModelCheckpoint(
+    filepath=checkpointPrefix,
     save_weights_only=True)
 
 
-history = model.fit(dataset, epochs=EPOCHS, callbacks=[checkpoint_callback])
+history = model.fit(dataset, epochs=EPOCHS, callbacks=[checkpointCallback])
 
 
-model = buildModel(size, embedding_dim, rnn_units, batch_size=1)
-model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+model = buildModel(size, embeddingDim, rnnUnits, batchSize=1)
+model.load_weights(tf.train.latest_checkpoint(checkpointPath))
 model.build(tf.TensorShape([1, None]))
 
 model.summary()
 
-output = generateText(model, char2idx, idx2char, start_string=u"E")
+output = generateText(model, char2idx, idx2char, startString=u"E")
 print("output:  ", output)
 with open('output/result_'+str(EPOCHS)+'.txt', 'w') as file:
    file.write(output)
