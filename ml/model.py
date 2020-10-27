@@ -19,16 +19,15 @@ def loss(labels, logits):
   return tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
 
 def generateText(model, char2idx, idx2char, startString):
-  # Evaluation step 
+  
   print(startString)
-  # Number of characters to generate
+
   nGenerate = 1000
 
-  # Converting our start string to numbers (vectorizing)
+  # Converting start string to numbers (vectorizing)
   inputEval = [char2idx[s] for s in startString]
   inputEval = tf.expand_dims(inputEval, 0)
 
-  # Empty string to store our results
   textGenerated = []
 
   temperature = 1.0
@@ -42,7 +41,7 @@ def generateText(model, char2idx, idx2char, startString):
       predictions = predictions / temperature
       predictedId = tf.random.categorical(predictions, num_samples=1)[-1,0].numpy()
 
-      # We pass the predicted character as the next input to the model
+      # pass the predicted character as the next input to the model
       inputEval = tf.expand_dims([predictedId], 0)
 
       textGenerated.append(idx2char[predictedId])

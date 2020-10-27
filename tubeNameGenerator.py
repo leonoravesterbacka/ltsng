@@ -32,7 +32,7 @@ idx2char = np.array(sort)
 
 listAsInt = np.array([char2idx[c] for c in listStations])
 
-# The maximum length sentence we want for a single input in characters
+# maximum length sentence for a single input in characters
 seqLen = 20
 examples = len(listStations)//(seqLen+1)
 
@@ -42,13 +42,12 @@ charDataset = tf.data.Dataset.from_tensor_slices(listAsInt)
 for i in charDataset.take(100):
     print(idx2char[i.numpy()])
 
-##The `batch` method converts these individual characters to sequences of the desired size.
+##The batch method converts these individual characters to sequences
 sequences = charDataset.batch(seqLen+1, drop_remainder=True)
 
 for item in sequences.take(5):
     print(repr(''.join(idx2char[item.numpy()])))
 
-##For each sequence, duplicate and shift it to form the input and target text by using the `map` method to apply a simple function to each batch:
 dataset = sequences.map(processInputTarget)
 
 #Print the first examples input and target values:
@@ -61,13 +60,13 @@ for i, (inputIdx, targetIdx) in enumerate(zip(inputExample[:10], targetExample[:
     print("  input: {} ({:s})".format(inputIdx, repr(idx2char[inputIdx])))
     print("  expected output: {} ({:s})".format(targetIdx, repr(idx2char[targetIdx])))
 
-#shuffle data nad pack into batches
-BATCH_SIZE = 64
+#shuffle data and pack into batches
+BATCH_SIZE = 128
 BUFFER_SIZE = 10000
 
 dataset = dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE, drop_remainder=True)
 
-# Length of the sorted list in chars
+# Length of the sorted list
 size = len(sort)
 
 # The embedding dimension
@@ -106,9 +105,7 @@ checkpointCallback=tf.keras.callbacks.ModelCheckpoint(
     filepath=checkpointPrefix,
     save_weights_only=True)
 
-
 history = model.fit(dataset, epochs=EPOCHS, callbacks=[checkpointCallback])
-
 
 model = buildModel(size, embeddingDim, rnnUnits, batchSize=1)
 model.load_weights(tf.train.latest_checkpoint(checkpointPath))
